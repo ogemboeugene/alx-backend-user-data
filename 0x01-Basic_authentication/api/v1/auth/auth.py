@@ -1,50 +1,38 @@
 #!/usr/bin/env python3
+"""Authentication module for the API.
 """
-manages the API authentication.
-"""
-
-from flask import request
+import re
 from typing import List, TypeVar
+from flask import request
 
 
 class Auth:
-    """
-    Manage API Authentication.
+    """Authentication class.
     """
     def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
+        """Checks if a path requires authentication.
         """
-        Check if a user is authenticated for a given endpoint.
-        Args:
-        path (str): The current URL being requested.
-        excluded_paths (List[str]): A list of URLs that do not require
-        authentication to access. If the current URL matches one in this list,
-        return True.
-        Returns:
-        Bool: True if the user is authenticated; False otherwise.
-        Raises:
-        401 Unauthorized: If no auth token was provided or it's invalid.
-        """
-        if path is None:
-            return True
-
-        if excluded_paths is None or not excluded_paths:
-            return True
-
-        path = path.rstrip('/') + '/'
-        excluded_paths = [p.rstrip('/') + '/' for p in excluded_paths]
-
-        return path not in excluded_paths
+        if path is not None and excluded_paths is not None:
+            for exclusion_path in map(lambda x: x.strip(), excluded_paths):
+                pattern = ''
+                if exclusion_path[-1] == '*':
+                    pattern = '{}.*'.format(exclusion_path[0:-1])
+                elif exclusion_path[-1] == '/':
+                    pattern = '{}/*'.format(exclusion_path[0:-1])
+                else:
+                    pattern = '{}/*'.format(exclusion_path)
+                if re.match(pattern, path):
+                    return False
+        return True
 
     def authorization_header(self, request=None) -> str:
-        """
-        Gets the authorization header field from the request.
+        """Gets the authorization header field from the request.
         """
         if request is not None:
-            return request.headers.get('Authorization')
+            return request.headers.get('Authorization', None)
         return None
 
     def current_user(self, request=None) -> TypeVar('User'):
-        """
-        Gets the current user
+        """Gets the current user from the request.
         """
         return None
